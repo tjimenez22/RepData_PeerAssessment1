@@ -2,19 +2,67 @@
 
 
 ## Loading and preprocessing the data
-
-
+I download the file from: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip,
+unzip it and then read it with R:
+```{r}
+data<-read.csv("activity.csv")
+dateDownload<-date()
+```
 
 ## What is mean total number of steps taken per day?
-
-
+In the barplot we can see the total number of steps per day.
+```{r}
+barplot(tapply(data$steps, data$date, sum,na.rm=TRUE), las=2)
+stepsPerDay<-tapply(data$steps, data$date, sum,na.rm=TRUE)
+summary(stepsPerDay)[4]
+summary(stepsPerDay)[3]
+```
+The mean of steps per day is 9354 and the median is 10400.
 
 ## What is the average daily activity pattern?
 
+The time series plot shows the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis):
+```{r}
+plot(tapply(data$steps, data$interval, mean,na.rm=TRUE), type = "l")
+stepsPerInterval<-tapply(data$steps, data$interval, mean,na.rm=TRUE)
+which.max(stepsPerInterval)
+stepsPerInterval[104]
+```
+
+The 5-minute interval, on average across all the days in the dataset, that contains the maximum number of steps is 835.
+With 206.1698 steps.
 
 
 ## Imputing missing values
-
-
+There are 2304 NAs on this dataset.
+By inspecting it a little I saw that all NAs correspond to the whole intervals of 8 complete days (2012-10-01,2012-10-08,2012-11-01,2012-11-04,2012-11-09,2012-11-10,2012-11-14 and 2012-11-30).
+I prefer to work without these days, with the reduced dataset of the real mesures that were taken.
+```{r}
+sum(is.na(data))
+newData<-data
+which(is.na(newData))
+newData<-na.omit(newData)
+```
+I compared this reduced dateset with the one used in the first question:
+```{r}
+barplot(tapply(newData$steps, newData$date, sum), las=2)
+newStepsPerDay<-tapply(newData$steps, newData$date, sum)
+summary(newStepsPerDay)[4]
+summary(newStepsPerDay)[3]
+```
+As expected, the mean of the total steps per day is higher in the reduced dataset as well as the median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+From this graph we can see that the mean of steps per interval is almost the same in the first 500 intervals, between intervals 500 and 1000 people move a little bit more on weekdays, and for the next intervals (till interval 2000) people are moving more on weekends.
+I can said that the patterns are different from weekdays and weekend.
+```{r}
+library("timeDate")
+library("lattice")
+newData$day<-ifelse(isWeekday(newData$date),"weekday","weekend")
+results<-aggregate(newData$steps, by=list(newData$day,newData$interval),FUN=mean)
+names(results)[1]<-"day"
+names(results)[2]<-"interval"
+names(results)[3]<-"mean"
+xyplot(mean~interval|day,results, type="l",layout=(c(1,2)))
+```
+
